@@ -146,32 +146,24 @@ private static final int DEFAULT_SESSION_TIMEOUT = 10 * 1000;
 
 	try {
 	    List<String> brokerTopics = JavaConversions.seqAsJavaList(zkUtils.getAllTopics());
+             for (String topic: brokerTopics)
+	          System.out.println(topic);
+	     }
 
-       for (String topic: brokerTopics)
-	        System.out.println(topic);
-
-    } catch (Exception ex) {
-        ex.printStackTrace();
-    } finally {
-        if (zkClient != null) {
-            zkClient.close();
-        }
-    }
+         } 
+         catch (Exception ex) {
+                  ex.printStackTrace();
+         }
+         finally {
+            if (zkClient != null) {
+                zkClient.close();
+            }
+          }
 	}
 	
 	
 	
-	public static void main(String[] args){
-		
-		
-		ArrayList<String> topicList = new ArrayList<String>();
-		topicList.add("AAA");
-		topicList.add("BBB");
-		createTopics (topicList, 2, 1);
-		
-		
-		
-	}
+
 
 }
 
