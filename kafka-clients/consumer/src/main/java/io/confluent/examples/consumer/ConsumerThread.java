@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
-public class ConsumerLogic implements Runnable {
+public class ConsumerThread implements Runnable {
   private KafkaStream topicStream;
   private int threadNumber;
   private int groupid;
@@ -48,121 +48,72 @@ public class ConsumerLogic implements Runnable {
 //static Map<Integer, ConcurrentHashMap<Integer, Boolean>> outerMap = new ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, Boolean>>();
 //static Map<Integer, Boolean> innerMap = new ConcurrentHashMap<Integer, Boolean>();    
 
-   
-   
-
- public ConsumerLogic(KafkaStream stream, int threadNumber, int groupid,CyclicBarrier barrier) {
+public ConsumerThread(KafkaStream stream, int threadNumber, int groupid,CyclicBarrier barrier) {
     this.threadNumber = threadNumber;
     topicStream = stream;
     this.groupid = groupid;
-    //this.totalNoMessages = totalNoMessages;
     date= new java.util.Date();
     this.barrier = barrier;
-
-    //this.consumer = consumer;
-  }
+}
  
- 
- 
- public void run() {
-	  //  ConsumerIterator<Object, Object> it = topicStream.iterator();
-	     
-		 String topic = null;    
-	   
-	   
-	    while(true){
-	    try{
-	        
-	    	ConsumerIterator<Object, Object> it = topicStream.iterator();
-	        while (it.hasNext()) {
-	      
-	        	startTime = System.currentTimeMillis();
-	           MessageAndMetadata<Object, Object> record = it.next();
-	          synchronized (lock) { 
-	        	  wasWorkDone = true; 
-	              topic = record.topic();
-	             int partition = record.partition();
-	             long offset = record.offset();
-	             Object key = record.key();
-	             String message = (String) record.message();
-	             
-
-	              counter++;
-	         }
-	      
-	        }
+public void run() {
+   String topic = null;    
+   while (true) {
+	  try{
+	      ConsumerIterator<Object, Object> it = topicStream.iterator();
+	      while (it.hasNext()) {
+	             startTime = System.currentTimeMillis();
+	             MessageAndMetadata<Object, Object> record = it.next();
+	             synchronized (lock) { 
+	        	wasWorkDone = true; 
+	                topic = record.topic();
+	                int partition = record.partition();
+	                long offset = record.offset();
+	                Object key = record.key();
+	                String message = (String) record.message();
+	                counter++;
+	             }
+	      }
 	    }
-	     catch(ConsumerTimeoutException cte){
-	          
+	    catch(ConsumerTimeoutException cte){
 	          long endTime = System.currentTimeMillis();
 	          elapsedTime =  endTime - startTime ;
-	          //ConsumerGroup.totalTimeConsuming += elapsedTime;
-	          
-	    	 
-	         synchronized (lock) {
-	               
-
-	      	  /* if(wasWorkDone){
-	              innerMap.put(threadNumber, true);
-	               outerMap.put(groupid, (ConcurrentHashMap<Integer, Boolean>) innerMap);
-
-
-	      	   }  */
-	        	 
-	        	 if(wasWorkDone && (counter > 0)){
-	                   //conList.add(groupid).;
-	                	ConsumerGroup.totalMessagesConsumed += counter;
+                  
+                  synchronized (lock) {
+	               /* if(wasWorkDone){
+	                     innerMap.put(threadNumber, true);
+	                     outerMap.put(groupid, (ConcurrentHashMap<Integer, Boolean>) innerMap);
+                       }*/
+	               if (wasWorkDone && (counter > 0)) {
+	                   ConsumerGroup.totalMessagesConsumed += counter;
 	                   wasWorkDone = false;
 	                 
 	                  System.out.println(new Timestamp(date.getTime()) +
 	                     " :] Thread :" + threadNumber +
 	                     " Took " + ((double) elapsedTime)/1000  + "  seconds" +
 	                      "to consume" + counter + " messages on topic " + topic );
-	                  
+	                  counter = 0;
+
 	                 //innerMap.put(threadNumber, true);
 	                 //outerMap.put(groupid, (ConcurrentHashMap<Integer, Boolean>) innerMap);
-	                  
-	                  counter = 0;
-	                 }
-	        	   
-
-	        	   
-	          
-	         } 
+	                }
+	            } 
 	         
 	         try{
-	         //System.out.println(Thread.currentThread().getName() + " is waiting on barrier");
-	         barrier.await();
-	         
-	         synchronized (lock) {
-	        	 ConsumerGroup.startTime = System.currentTimeMillis();
-	         }
-	         
-	         //System.out.println(Thread.currentThread().getName() + " has crossed the barrier");
-	         
-	         } catch (InterruptedException e) {
-	         e.printStackTrace();
-	         } catch (BrokenBarrierException e) {
-	         e.printStackTrace();
+	             barrier.await();
+	             synchronized (lock) {
+	        	ConsumerGroup.startTime = System.currentTimeMillis();
+	             }
+	         } 
+	         catch (InterruptedException e) {
+	         	e.printStackTrace();
+	         } 
+	         catch (BrokenBarrierException e) {
+	         	e.printStackTrace();
 	         }          
-	  
-	     
-	     }
+	   }
 	    
-	    }
+       }
 
-	    
-	 }
-
- 
-
- 
-
-
- 
-
- 
- 
- 
- 
- }
+   }
+}
