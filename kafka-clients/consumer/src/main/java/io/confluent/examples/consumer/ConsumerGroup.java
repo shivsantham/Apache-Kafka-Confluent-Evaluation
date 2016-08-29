@@ -68,16 +68,14 @@ public class ConsumerGroup {
             long totalNoOfMessagesPerTopic = streams.size();
             // Launch all the threads
             executor = Executors.newFixedThreadPool(numThreads);
-            // Create ConsumerLogic objects and bind them to threads
+            // Create ConsumerThread objects and bind them to threads
             int threadNumber = 0;
             for (final KafkaStream stream : streams) {
-                 executor.submit(new ConsumerLogic(stream, threadNumber,consumeGroup,cb));
+                 executor.submit(new ConsumerThread(stream, threadNumber,consumeGroup,cb));
                  threadNumber++;
             }
      }
-
-
-	/*  public static boolean isAllWorkDone(String[] topicList){
+       /*  public static boolean isAllWorkDone(String[] topicList){
 	           //for(Integer i: outerMap.keySet()){
 		          for(int i=0 ; i<topicList.length;i++){
 			      if(!ConsumerLogic.isWorkDoneforGroup(i)){
@@ -86,8 +84,7 @@ public class ConsumerGroup {
 		          }
 		   //}}*/
 	  
-	  
-      public static void main(String[] args) {
+	public static void main(String[] args) {
 
           String zooKeeper = "localhost:2181";
           String groupId = "group";
