@@ -4,15 +4,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-
 import kafka.admin.AdminUtils;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
-
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
 import kafka.admin.RackAwareMode;
-
 import scala.collection.JavaConversions;
 
 /**
