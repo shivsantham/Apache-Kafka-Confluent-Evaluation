@@ -90,7 +90,78 @@ public class ProducerGroup {
     	
     }
     
+    public void run(int numThreads) {
+      executor = Executors.newFixedThreadPool(numThreads);
+      int index;
+      int count = 0;
+      int keyNo = 0;
+      for (int i=0; i< numThreads; i++) {
+           index = i%10;
+           keyNo = i%5; // 5 can be replaced with number of topics.
+           if(index==0){count++;}
+             executor.submit(new ProducerThread(topicList[count-1],String.valueOf(keyNo),
+                             retrieveData(topicList[count-1],
+                             filePath),noOfContinousMessages,producerConfig()));
+      }
+      
+    }
     
+    public void shutDown(){
+       if (executor != null) executor.shutdown();
+       
+       try {
+              if(noOfContinousMessages > 50000){
+        	      if (!executor.awaitTermination(90000, TimeUnit.MILLISECONDS)) {
+                      System.out.println(
+                         "Timed out on creating prodcuers threads to shut down,"
+                      + " exiting uncleanly");
+                  }
+            	  
+              }
+    	      if (!executor.awaitTermination(50000, TimeUnit.MILLISECONDS)) {
+                  System.out.println(
+                     "Timed out on creating prodcuers threads to shut down,"
+                  + " exiting uncleanly");
+              }
+       } 
+       catch (InterruptedException e) {
+              System.out.println("Interrupted during shutdown, exiting uncleanly");
+       }
+    }
+    
+    StringBuffer generate10kCharacters(String s){
+        StringBuffer buffer = new StringBuffer();
+        for(int i =0 ; i<200;i++){    
+            buffer.append(s);
+        }
+       return buffer;
+    }
+   
+   String retrieveData(String topicName, String filepath) {
+	
+      String toReturn = null;
+      JSONParser parser = new JSONParser();
+      JSONObject jsonObject = null;
+      try {
+          Object obj = parser.parse(new FileReader(filePath));
+          jsonObject = (JSONObject) obj;
+      } 
+      catch (Exception e) {
+          e.printStackTrace();
+      }
+
+      Set<String> groupKeys = jsonObject.keySet();
+      for (String key : groupKeys) {
+           JSONObject consumerGroupDetails = (JSONObject) jsonObject.get(key);
+                for(int i=0; i<topicList.length;i++){
+                    if(topicName != null && topicName.equals(topicList[i])){
+                           toReturn = generate10kCharacters((String)consumerGroupDetails.get("Top"+i)).toString();
+                    }
+                }
+      }
+
+      return toReturn;
+    }
     
     public static void main(String[] args){
       
@@ -140,89 +211,7 @@ public class ProducerGroup {
      }
 
 
-    public void run(int numThreads) {
     
-      //executor = Executors.newFixedThreadPool(numThreads);
-      executor = Executors.newFixedThreadPool(numThreads);
-      
-
-      
-      int index;
-      int count = 0;
-      int keyNo = 0;
-      for(int i=0; i< numThreads; i++){
-          index = i%10;
-          keyNo = i%5;
-          if(index==0){count++;}
-          //System.out.println("Count inside producer"+count);
-             executor.submit(new ProducerThread(topicList[count-1],String.valueOf(keyNo),
-                             retrieveData(topicList[count-1],
-                             filePath),noOfContinousMessages,producerConfig()));
-      }
-      
-    }
-    
-    public void shutDown(){
-       if (executor != null) executor.shutdown();
-       
-       try {
-              if(noOfContinousMessages > 50000){
-        	      if (!executor.awaitTermination(90000, TimeUnit.MILLISECONDS)) {
-                      System.out.println(
-                         "Timed out on creating prodcuers threads to shut down,"
-                      + " exiting uncleanly");
-                  }
-            	  
-              }
-    	      if (!executor.awaitTermination(50000, TimeUnit.MILLISECONDS)) {
-                  System.out.println(
-                     "Timed out on creating prodcuers threads to shut down,"
-                  + " exiting uncleanly");
-              }
-       } 
-       catch (InterruptedException e) {
-              System.out.println("Interrupted during shutdown, exiting uncleanly");
-       }
-    }
-    
-    StringBuffer generate10kCharacters(String s){
-        StringBuffer buffer = new StringBuffer();
-        //for(int i =0 ; i< 200;i++){
-        for(int i =0 ; i<200;i++){    
-            buffer.append(s);
-        }
-
-       return buffer;
-    }
-	
-	 String retrieveData(String topicName, String filepath) {
-	
-      String toReturn = null;
-      //String filePath = "/ariba/something.json";
-      JSONParser parser = new JSONParser();
-      JSONObject jsonObject = null;
-      try {
-          Object obj = parser.parse(new FileReader(filePath));
-          jsonObject = (JSONObject) obj;
-      } catch (Exception e) {
-          e.printStackTrace();
-	  }
-
-      Set<String> groupKeys = jsonObject.keySet();
-      //List<String> topicList = new ArrayList<String>();
-      
-      for (String key : groupKeys) {
-              JSONObject consumerGroupDetails = (JSONObject) jsonObject.get(key);
-                for(int i=0; i<topicList.length;i++){
-                    if(topicName != null && topicName.equals(topicList[i])){
-                           toReturn = generate10kCharacters((String)consumerGroupDetails.get("Top"+i)).toString();
-                    }
-                }
-
-      }
-
-      return toReturn;
-    }
     
 	 
 
