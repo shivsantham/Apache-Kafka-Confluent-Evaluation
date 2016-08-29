@@ -64,7 +64,6 @@ public class ProducerGroup {
             String[] zookeeperHosts = {"localhost:2181"}; // If multiple zookeeper then -> String zookeeperHosts = "192.168.20.1:2181,192.168.20.2:2181";
             int sessionTimeOutInMs = 15 * 1000; // 15 secs
             int connectionTimeOutInMs = 10 * 1000; // 10 secs
-            //String topicName = "testTopic";
             int noOfPartitions = 2;
             int noOfReplication = 1;
             
@@ -112,10 +111,10 @@ public class ProducerGroup {
        try {
               if(noOfContinousMessages > 50000){
         	      if (!executor.awaitTermination(90000, TimeUnit.MILLISECONDS)) {
-                      System.out.println(
-                         "Timed out on creating prodcuers threads to shut down,"
-                      + " exiting uncleanly");
-                  }
+                          System.out.println(
+                               "Timed out on creating prodcuers threads to shut down,"
+                               + " exiting uncleanly");
+                      }
             	  
               }
     	      if (!executor.awaitTermination(50000, TimeUnit.MILLISECONDS)) {
