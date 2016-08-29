@@ -22,51 +22,38 @@ import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
 import io.confluent.examples.producer.ZookeeperUtil;
-
-
-//import io.confluent.examples.consumer.GenericRecord;
 import io.confluent.examples.producer.ProducerThread;
 import java.util.Map;
 import java.util.HashMap;
-//import kafka.utils.ZkUtils;
 
 public class ProducerGroup {
 
     private int numThreads;
     private int noOfContinousMessages;
-	private ExecutorService executor;
+    private ExecutorService executor;
     public static String BootStrapServer = "http://localhost:9092";
     public static long totalTimeProducing;
-
     static Object lock = new Object();
-
-
     public String filePath = "/ariba/something.json";
-
     private String[] topicList = null;
     
     ProducerGroup(int noOfThreads, int noOfMessages,String[] topicList){
       numThreads = noOfThreads;
       noOfContinousMessages = noOfMessages;
       this.topicList = topicList;
-      //setupMultiZookeeper(topicList);
-      
       ArrayList<String>topics = new ArrayList<String>(Arrays.asList(topicList));
       ZookeeperUtil.createTopics(topics, 2, 1);
-      //createTopics (topicList, 2, 1);
+      
     }
 
     private Properties producerConfig() {
       Properties props = new Properties();
       props.put("bootstrap.servers", BootStrapServer);
-      //props.setProperty("zookeeper.connect", zookeeper);
-
       props.put("acks", "all");
-      //props.put("retries", 0);
       props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
       props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
     
-    return props;
+      return props;
     }
     
     private void setupMultiZookeeper(String[] topicList){
@@ -92,11 +79,6 @@ public class ProducerGroup {
                 }
             }
             
-            //Properties topicConfiguration = new Properties();
-
-            //AdminUtils.createTopic(zkUtils, topicName, noOfPartitions, noOfReplication, topicConfiguration,RackAwareMode.Disabled$.MODULE$);
-           
-
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
@@ -112,70 +94,50 @@ public class ProducerGroup {
     
     public static void main(String[] args){
       
-      //int noOfMessages = 100000;// Number of continous Messages
-      
-        
-      String topics = args[0];
+      String topics = args[0]; // List of topics to create seperated by Comma
       String[] topicList = topics.split(",");
-      
       int noOfthreads = 10 * topicList.length; // Number of Publishers
-      
       int noOfMessages = Integer.valueOf(args[1]);
       
-  /*    if (topicList.length != 5) {
-          System.out.println("Sorry right now only 5 topics supported");
-      }*/
-      
       ProducerGroup pg = new ProducerGroup(noOfthreads,noOfMessages,topicList);
+      Long startTime = System.currentTimeMillis();
+      System.out.println("Spawning " + noOfthreads + " Producer Threads");
+      pg.run(noOfthreads);
         
-        Long startTime = System.currentTimeMillis();
-        System.out.println("Spawning " + noOfthreads + " Producer Threads");
-        
-        pg.run(noOfthreads);
-        
-        for(int i=0; i<topicList.length;i++){
-            //long noProcessed = ProducerThread.getTopicCount(topicList[i]);
+        for (int i=0; i<topicList.length;i++) {
             long noProcessed = 0;
-            
-            while(noProcessed < noOfMessages){
-                     synchronized(lock){ 
+            while (noProcessed < noOfMessages) {
+                   synchronized(lock){ 
                      noProcessed = ProducerThread.getTopicCount(topicList[i]);
-                     }
-                
-                  if(noOfMessages > 10000){
+                  }
+                if (noOfMessages > 10000) {
                       try {
                          Thread.sleep(60000);
-                      } catch (InterruptedException ie) {
-
+                      } 
+                      catch (InterruptedException ie) {
                       }
-                  }
-
-                  else{
+                }
+                else {
                        try {
                             Thread.sleep(5000);
-                       } catch (InterruptedException ie) {
-                          }
+                       } 
+                       catch (InterruptedException ie) {
+                       }
                   }
-                  //System.out.println("No of messages produced for "
-                    //     + "Topic " + topicList[i] + noProcessed);
+
            }
         }
         
         pg.shutDown();
         Long endTime = System.currentTimeMillis();
-        
-        //double totalTime = totalTimeProducing/noOfthreads;
         double totalTime = (endTime - startTime);
         double totalTimeInSecs = ((double) totalTime)/1000;
         
         long noOfMessagesSent = noOfthreads * noOfMessages;
-        System.out.println( " No of Messages produced per second ::" + ((double)noOfMessagesSent)/totalTimeInSecs);
+        System.out.println( " No of Messages produced per second ::" + 
+                   ((double)noOfMessagesSent)/totalTimeInSecs);
         
-        
-
-        
-      
-    }
+     }
 
 
     public void run(int numThreads) {
