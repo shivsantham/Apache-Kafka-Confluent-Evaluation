@@ -3,7 +3,7 @@ Evaluating the kafka producer and consumer throughput
 
 This is basically a throughput test for the kafka producers and consumers.
 
-Something.json -- has static characters. Using this to build to 10k message size when sending messages through producer.
+test.json -- has static characters. Using this to build to 10k message size when sending messages through producer.
 
 Producer:
 
