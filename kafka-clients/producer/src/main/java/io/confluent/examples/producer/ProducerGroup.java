@@ -31,18 +31,22 @@ public class ProducerGroup {
     private int numThreads;
     private int noOfContinousMessages;
     private ExecutorService executor;
+    private static int DEFAULT_NO_THREADS = 10;
+    private static int DEFAULT_SLEEP_TIME = 5000;
+    private int noOfPartition = 5;
+    private int replicationFactor = 1;	
     public static String BootStrapServer = "http://localhost:9092";
     public static long totalTimeProducing;
     static Object lock = new Object();
     public String filePath = "/ariba/something.json";
     private String[] topicList = null;
     
-    ProducerGroup(int noOfThreads, int noOfMessages,String[] topicList){
+    ProducerGroup(int noOfThreads, int noOfMessages,String[] topicList) {
       numThreads = noOfThreads;
       noOfContinousMessages = noOfMessages;
       this.topicList = topicList;
       ArrayList<String>topics = new ArrayList<String>(Arrays.asList(topicList));
-      ZookeeperUtil.createTopics(topics, 2, 1);
+      ZookeeperUtil.createTopics(topics, noOfPartition, replicationFactor);
       
     }
 
@@ -56,46 +60,14 @@ public class ProducerGroup {
       return props;
     }
     
-    private void setupMultiZookeeper(String[] topicList){
-    	
-        ZkClient zkClient = null;
-        ZkUtils zkUtils = null;
-        try {
-            String[] zookeeperHosts = {"localhost:2181"}; // If multiple zookeeper then -> String zookeeperHosts = "192.168.20.1:2181,192.168.20.2:2181";
-            int sessionTimeOutInMs = 15 * 1000; // 15 secs
-            int connectionTimeOutInMs = 10 * 1000; // 10 secs
-            int noOfPartitions = 2;
-            int noOfReplication = 1;
-            
-            for(String zookeeper:zookeeperHosts){
-            
-                zkClient = new ZkClient(zookeeper, sessionTimeOutInMs, connectionTimeOutInMs, ZKStringSerializer$.MODULE$);
-                zkUtils = new ZkUtils(zkClient, new ZkConnection(zookeeper), false);
-                for(String topicName: topicList){
-                    System.out.println("Setting no of partitions ="+noOfPartitions + "for topic" + topicName);
-                    AdminUtils.createTopic(zkUtils, topicName, noOfPartitions, noOfReplication, 
-                             producerConfig(),RackAwareMode.Disabled$.MODULE$);
-                }
-            }
-            
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-            if (zkClient != null) {
-                zkClient.close();
-            }
-        }
-    	
-    	
-    }
-    
+
     public void run(int numThreads) {
       executor = Executors.newFixedThreadPool(numThreads);
       int index;
       int count = 0;
       int keyNo = 0;
       for (int i=0; i< numThreads; i++) {
-           index = i%10;
+           index = i%DEFAULT_NO_THREADS;
            keyNo = i%5; // 5 can be replaced with number of topics.
            if(index==0){count++;}
              executor.submit(new ProducerThread(topicList[count-1],String.valueOf(keyNo),
@@ -109,15 +81,8 @@ public class ProducerGroup {
        if (executor != null) executor.shutdown();
        
        try {
-              if(noOfContinousMessages > 50000){
-        	      if (!executor.awaitTermination(90000, TimeUnit.MILLISECONDS)) {
-                          System.out.println(
-                               "Timed out on creating prodcuers threads to shut down,"
-                               + " exiting uncleanly");
-                      }
-            	  
-              }
-    	      if (!executor.awaitTermination(50000, TimeUnit.MILLISECONDS)) {
+             if (!executor.awaitTermination(DEFAULT_SLEEP_TIME, 
+		          TimeUnit.MILLISECONDS)) {
                   System.out.println(
                      "Timed out on creating prodcuers threads to shut down,"
                   + " exiting uncleanly");
@@ -154,7 +119,8 @@ public class ProducerGroup {
            JSONObject consumerGroupDetails = (JSONObject) jsonObject.get(key);
                 for(int i=0; i<topicList.length;i++){
                     if(topicName != null && topicName.equals(topicList[i])){
-                           toReturn = generate10kCharacters((String)consumerGroupDetails.get("Top"+i)).toString();
+                           toReturn = generate10kCharacters((String)consumerGroupDetails.get(
+				      "Top"+i)).toString();
                     }
                 }
       }
@@ -166,12 +132,12 @@ public class ProducerGroup {
       
       String topics = args[0]; // List of topics to create seperated by Comma
       String[] topicList = topics.split(",");
-      int noOfthreads = 10 * topicList.length; // Number of Publishers
+      int noOfthreads = DEFAULT_NO_THREADS * topicList.length; // Number of Publishers
       int noOfMessages = Integer.valueOf(args[1]);
       
       ProducerGroup pg = new ProducerGroup(noOfthreads,noOfMessages,topicList);
       Long startTime = System.currentTimeMillis();
-      System.out.println("Spawning " + noOfthreads + " Producer Threads");
+      //Spawning threads
       pg.run(noOfthreads);
         
         for (int i=0; i<topicList.length;i++) {
@@ -180,22 +146,13 @@ public class ProducerGroup {
                    synchronized(lock){ 
                      noProcessed = ProducerThread.getTopicCount(topicList[i]);
                   }
-                if (noOfMessages > 10000) {
-                      try {
-                         Thread.sleep(60000);
-                      } 
-                      catch (InterruptedException ie) {
-                      }
-                }
-                else {
-                       try {
-                            Thread.sleep(5000);
-                       } 
-                       catch (InterruptedException ie) {
-                       }
-                  }
-
-           }
+		  try {
+                     Thread.sleep(DEFAULT_SLEEP_TIME);
+                  } 
+                  catch (InterruptedException ie) {
+                         ie.printStackTrace();
+		  }
+             }
         }
         
         pg.shutDown();
