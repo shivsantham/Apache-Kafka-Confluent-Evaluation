@@ -33,7 +33,8 @@ public class ConsumerGroup {
     public static long startTime;
     public static long endTime;
 
-    public ConsumerGroup (String zookeeper, String groupId, String topic, int consumeGroup) {
+    public ConsumerGroup (String zookeeper, String groupId, String topic, 
+			  int consumeGroup) {
 	    consumer = kafka.consumer.Consumer.createJavaConsumerConnector(
 	               new ConsumerConfig(createConsumerConfig(zookeeper, groupId)));
 	    this.topic = topic;
@@ -62,7 +63,8 @@ public class ConsumerGroup {
             StringDecoder valueDecoder = new StringDecoder(vProps);
 
             Map<String, List<KafkaStream<String, String>>> consumerMap =
-                        consumer.createMessageStreams(topicCountMap, keyDecoder, valueDecoder);
+                        consumer.createMessageStreams(topicCountMap, 
+						      keyDecoder, valueDecoder);
             List<KafkaStream<String, String>> streams = consumerMap.get(topic);
             
             long totalNoOfMessagesPerTopic = streams.size();
@@ -75,14 +77,7 @@ public class ConsumerGroup {
                  threadNumber++;
             }
      }
-       /*  public static boolean isAllWorkDone(String[] topicList){
-	           //for(Integer i: outerMap.keySet()){
-		          for(int i=0 ; i<topicList.length;i++){
-			      if(!ConsumerLogic.isWorkDoneforGroup(i)){
-			          return false;
-			      }
-		          }
-		   //}}*/
+
 	  
 	public static void main(String[] args) {
 
@@ -97,13 +92,11 @@ public class ConsumerGroup {
           List<ConsumerGroup> cg = new ArrayList<ConsumerGroup>();
           ConsumerGroup cga = null;
           
-          // Launching 5 consumer groups for 5 topics -- with 10 threads in a group 
-           /*for(int i=0; i<topicList.length;i++){
-              ConsumerGroup cg = new ConsumerGroup(zooKeeper, groupId, topicList[i]);
-              cg.run(noOfthreads);
-          }*/
+          // Launching consumer group for each topic -- with 10 
+	  // consumer threads in a group 
+
           startTime = System.currentTimeMillis();
-          CyclicBarrier cb = new CyclicBarrier(topics.length*noOfthreads, new Runnable(){
+          CyclicBarrier cb = new CyclicBarrier(topics.length*noOfthreads, new Runnable() {
               @Override
               public void run() {
                 //This task will be executed once 
