@@ -38,7 +38,7 @@ public class ProducerGroup {
     public static String BootStrapServer = "http://localhost:9092";
     public static long totalTimeProducing;
     static Object lock = new Object();
-    public String filePath = "/ariba/something.json";
+    public String filePath = "/siva/test.json";
     private String[] topicList = null;
     
     ProducerGroup(int noOfThreads, int noOfMessages,String[] topicList) {
