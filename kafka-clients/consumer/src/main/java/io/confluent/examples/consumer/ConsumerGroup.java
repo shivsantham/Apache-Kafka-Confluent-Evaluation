@@ -23,6 +23,8 @@ public class ConsumerGroup {
     private String bootStrapServer;
     private String groupId;
     private String url;
+    private int DEFAULT_CONSUMER_TIMEOUT = 1000;
+    private int DEFAULT_COMMIT_INTERVAL = 100;	
     public static long totalTimeConsuming = 0 ; 
     public static long totalMessagesConsumed = 0;
     public static boolean workDone = false;
@@ -46,9 +48,9 @@ public class ConsumerGroup {
     private Properties createConsumerConfig(String zookeeper, String groupId) {
 	    Properties props = new Properties();
 	        props.put("zookeeper.connect", zookeeper);
-	        props.put("consumer.timeout.ms", "1000");
+	        props.put("consumer.timeout.ms", "DEFAULT_CONSUMER_TIMEOUT");
 	        props.put("group.id", groupId);
-	        props.put("auto.commit.interval.ms", "1000");
+	        props.put("auto.commit.interval.ms","DEFAULT_COMMIT_INTERVAL");
 	        props.put("auto.offset.reset", "smallest");
 	    return props;
     }
