@@ -45,10 +45,8 @@ public class ConsumerThread implements Runnable {
   private long startTime;
   
 
-//static Map<Integer, ConcurrentHashMap<Integer, Boolean>> outerMap = new ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, Boolean>>();
-//static Map<Integer, Boolean> innerMap = new ConcurrentHashMap<Integer, Boolean>();    
-
-public ConsumerThread(KafkaStream stream, int threadNumber, int groupid,CyclicBarrier barrier) {
+public ConsumerThread(KafkaStream stream, int threadNumber, int groupid,
+		      CyclicBarrier barrier) {
     this.threadNumber = threadNumber;
     topicStream = stream;
     this.groupid = groupid;
@@ -80,26 +78,19 @@ public void run() {
 	          elapsedTime =  endTime - startTime ;
                   
                   synchronized (lock) {
-	               /* if(wasWorkDone){
-	                     innerMap.put(threadNumber, true);
-	                     outerMap.put(groupid, (ConcurrentHashMap<Integer, Boolean>) innerMap);
-                       }*/
-	               if (wasWorkDone && (counter > 0)) {
-	                   ConsumerGroup.totalMessagesConsumed += counter;
-	                   wasWorkDone = false;
+			  if (wasWorkDone && (counter > 0)) {
+	                      ConsumerGroup.totalMessagesConsumed += counter;
+	                      wasWorkDone = false;
 	                 
-	                  System.out.println(new Timestamp(date.getTime()) +
-	                     " :] Thread :" + threadNumber +
-	                     " Took " + ((double) elapsedTime)/1000  + "  seconds" +
+	                      System.out.println(new Timestamp(date.getTime()) +
+	                      " :] Thread :" + threadNumber +
+	                      " Took " + ((double) elapsedTime)/1000  + "  seconds" +
 	                      "to consume" + counter + " messages on topic " + topic );
-	                  counter = 0;
-
-	                 //innerMap.put(threadNumber, true);
-	                 //outerMap.put(groupid, (ConcurrentHashMap<Integer, Boolean>) innerMap);
-	                }
+	                      counter = 0;
+			  }
 	            } 
 	         
-	         try{
+	         try {
 	             barrier.await();
 	             synchronized (lock) {
 	        	ConsumerGroup.startTime = System.currentTimeMillis();
