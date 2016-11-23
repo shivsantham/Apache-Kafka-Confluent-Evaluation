@@ -59,7 +59,13 @@ public void run() {
    while (true) {
 	  try{
 	      ConsumerIterator<Object, Object> it = topicStream.iterator();
-	      while (it.hasNext()) {
+	          /*
+		  hasNext() in Consumer iterator is a blocking call, so 
+		  we need to use the consumer timeout parameter, to exit
+		  this call. Setting this to one second, as we are more interested
+		  in measuring no of messages per second.
+		  */ 
+		  while (it.hasNext()) {
 	             startTime = System.currentTimeMillis();
 	             MessageAndMetadata<Object, Object> record = it.next();
 	             synchronized (lock) { 
