@@ -4,12 +4,11 @@ package io.confluent.examples.producer;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -19,9 +18,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 public class ProducerGroup {
-
-    private int numThreads;
-    private int noOfContinousMessages;
     private ExecutorService executor;
     private static int DEFAULT_NO_THREADS = 10;
     private static int DEFAULT_SLEEP_TIME = 5000;
@@ -34,8 +30,6 @@ public class ProducerGroup {
     private String[] topicList = null;
 
     ProducerGroup(int noOfThreads, int noOfMessages, String[] topicList) {
-        numThreads = noOfThreads;
-        noOfContinousMessages = noOfMessages;
         this.topicList = topicList;
         ArrayList<String> topics = new ArrayList<String>(Arrays.asList(topicList));
         ZookeeperUtil.createTopics(topics, noOfPartition, replicationFactor);
@@ -55,22 +49,48 @@ public class ProducerGroup {
     public void run(int numThreads) {
         // executor quản lý thread
         executor = Executors.newFixedThreadPool(numThreads);
-        int index;
-        int count = 0;
         int keyNo = 0;
+
+        // prepare data
+        String toReturn = null;
+        JSONParser parser = new JSONParser();
+        JSONObject jsonObject = null;
+        try {
+            Object obj = parser.parse(new FileReader(filePath));
+            jsonObject = (JSONObject) obj;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // tạo 5 thread
         // mỗi thread đại diện 1 topic
         for (int i = 0; i < numThreads; i++) {
-            index = i % DEFAULT_NO_THREADS;
             keyNo = i % 5; // 5 can be replaced with number of topics.
-            if (index == 0) {
-                count++;
-            }
-            executor.submit(new ProducerThread(topicList[count - 1], String.valueOf(keyNo),
-                    retrieveData(topicList[count - 1],
-                            filePath),
-                    noOfContinousMessages, producerConfig()));
+            executor.submit(new Thread() {
+                public void run() {
+                    // keyNo = i % 5;
+                    int min = 1;
+                    int max = 5;
+                    int keyNo = ThreadLocalRandom.current().nextInt(min, max + 1);
+                    Producer<String, String> producer = new KafkaProducer<String, String>(producerConfig());
+                    try {
+
+                        Long startThreadTime = System.currentTimeMillis();
+                        long produceThreadTime = System.currentTimeMillis();
+
+                        ProducerRecord<String, String> data = new ProducerRecord<String, String>(
+                            "test-topic", String.valueOf(keyNo), "{}");
+                    producer.send(data);
+
+                        long elapsedTime = produceThreadTime - startThreadTime;
+                        ProducerGroup.totalTimeProducing += elapsedTime;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        producer.flush();
+                    }
+                }
+            });
         }
 
     }
@@ -138,21 +158,24 @@ public class ProducerGroup {
         ProducerGroup pg = new ProducerGroup(noOfthreads, noOfMessages, topicList);
         Long startTime = System.currentTimeMillis();
         // Spawning threads
+        // bật thread
         pg.run(noOfthreads);
 
-        for (int i = 0; i < topicList.length; i++) {
-            long noProcessed = 0;
-            while (noProcessed < noOfMessages) {
-                synchronized (lock) {
-                    noProcessed = ProducerThread.getTopicCount(topicList[i]);
-                }
-                try {
-                    Thread.sleep(DEFAULT_SLEEP_TIME);
-                } catch (InterruptedException ie) {
-                    ie.printStackTrace();
-                }
-            }
-        }
+        // từng thread cứ mỗi 5 giây lại kiểm tra lại số message đã gửi đi
+        // for (int i = 0; i < topicList.length; i++) {
+        //     long noProcessed = 0;
+        //     while (noProcessed < noOfMessages) {
+        //         synchronized (lock) {
+        //             noProcessed = ProducerThread.getTopicCount(topicList[i]);
+        //         }
+        //         try {
+        //             Thread.sleep(DEFAULT_SLEEP_TIME);
+        //         } catch (InterruptedException ie) {
+        //             ie.printStackTrace();
+        //         }
+        //     }
+        // }
+
 
         pg.shutDown();
         Long endTime = System.currentTimeMillis();
@@ -163,83 +186,6 @@ public class ProducerGroup {
         System.out.println(" No of Messages produced per second ::" +
                 ((double) noOfMessagesSent) / totalTimeInSecs);
 
-    }
-
-}
-
-
-class ProducerThread implements Runnable {
-
-    private String topicName;
-    private String key;
-    private String datatoSend;
-    private Properties properties;
-    private Long threadno;
-    private int numMessages;
-    // số lượng message đã được gửi tới từng mỗi topic
-    private static Map<String, Long> topicCount = new HashMap<String, Long>();
-    private static Producer<String, String> producer = null;
-
-    static Object lock = new Object();
-    java.util.Date date;
-
-    ProducerThread(String topicName, String key, String datatoSend, int numMessages, Properties properties) {
-        this.topicName = topicName;
-        this.key = key;
-        this.datatoSend = datatoSend;
-        this.properties = properties;
-        this.numMessages = numMessages;
-        date = new java.util.Date();
-
-        synchronized (lock) {
-            if (topicCount.get(topicName) == null) {
-                topicCount.put(topicName, (long) 0);
-            }
-        }
-    }
-
-    @Override
-    public void run() {
-        producer = new KafkaProducer<String, String>(properties);
-        sendRecords(topicName, key, datatoSend, numMessages, producer);
-    }
-
-    public static long getTopicCount(String topic) {
-        synchronized (lock) {
-            return topicCount.get(topic);
-        }
-    }
-
-    // topicName
-    // key
-    // data
-    // numMessage
-    // producer
-    public void sendRecords(String topicName, String key, String dataJSONString, int numMessages,
-            Producer<String, String> producer) {
-
-        boolean returnStatus = true;
-        try {
-
-            Long startThreadTime = System.currentTimeMillis();
-
-            for (int i = 0; i < numMessages; i++) {
-                ProducerRecord<String, String> data = new ProducerRecord<String, String>(
-                        topicName, key, dataJSONString);
-                producer.send(data);
-                synchronized (lock) {
-                    topicCount.put(topicName, topicCount.get(topicName) + 1);
-                }
-            }
-            long produceThreadTime = System.currentTimeMillis();
-            long elapsedTime = produceThreadTime - startThreadTime;
-            ProducerGroup.totalTimeProducing += elapsedTime;
-        } catch (Exception e) {
-            e.printStackTrace();
-            returnStatus = false;
-        } finally {
-            producer.flush();
-        }
     }
 
 }
