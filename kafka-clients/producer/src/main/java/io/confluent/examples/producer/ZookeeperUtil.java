@@ -23,7 +23,7 @@ import scala.collection.JavaConversions;
 public class ZookeeperUtil {
     private static final int DEFAULT_SESSION_TIMEOUT = 10 * 1000;
     private static final int DEFAULT_CONNECTION_TIMEOUT = 8 * 1000;
-    private static final String ZOOKEEPER_CONNECT = "localhost:2181";
+    private static final String ZOOKEEPER_CONNECT = "localhost:22181";
 
     /**
      * Opens a new ZooKeeper client to access the Kafka broker.

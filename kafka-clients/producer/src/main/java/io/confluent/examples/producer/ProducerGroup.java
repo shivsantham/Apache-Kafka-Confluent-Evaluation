@@ -35,7 +35,7 @@ public class ProducerGroup {
     private static int DEFAULT_SLEEP_TIME = 5000;
     private int noOfPartition = 5;
     private int replicationFactor = 1;
-    public static String BootStrapServer = "http://localhost:9092";
+    public static String BootStrapServer = "http://localhost:29092";
     public static long totalTimeProducing;
     static Object lock = new Object();
     public String filePath = "/siva/test.json";
@@ -130,7 +130,10 @@ public class ProducerGroup {
     }
 
     public static void main(String[] args) {
-
+        // int a[] = {1, 2, 3};
+        // System.out.println(a.getClass().getName().toString());
+        System.out.println("args[0]");
+        System.out.println(args.length);
         String topics = args[0]; // List of topics to create seperated by Comma
         String[] topicList = topics.split(",");
         int noOfthreads = DEFAULT_NO_THREADS * topicList.length; // Number of Publishers
