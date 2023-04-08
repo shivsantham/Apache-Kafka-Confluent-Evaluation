@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
@@ -16,6 +17,9 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
+import org.apache.kafka.clients.admin.NewTopic;
 
 public class ProducerGroup {
     private ExecutorService executor;
@@ -32,8 +36,26 @@ public class ProducerGroup {
     ProducerGroup(int noOfThreads, int noOfMessages, String[] topicList) {
         this.topicList = topicList;
         ArrayList<String> topics = new ArrayList<String>(Arrays.asList(topicList));
-        ZookeeperUtil.createTopics(topics, noOfPartition, replicationFactor);
-
+        // https://stackoverflow.com/questions/65566929/cant-import-zkstringserializer
+        // ZookeeperUtil.createTopics(topics, noOfPartition, replicationFactor);
+        try (AdminClient client = AdminClient.create(this.producerConfig())) {
+            boolean topicExists = client.listTopics().names().get().stream().anyMatch(topicName -> topicName.equalsIgnoreCase("test-topic"));
+            if (topicExists) {
+                return;
+            }
+            CreateTopicsResult result = client.createTopics(Arrays.asList(
+                    new NewTopic("test-topic", 1, (short) 1)
+                    // new NewTopic("global-id-topic", 1, (short) 1),
+                    // new NewTopic("snapshot-topic", 1, (short) 1)
+            ));
+            result.all().get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            throw new IllegalStateException(e);
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+            throw new IllegalStateException(e);
+        }
     }
 
     private Properties producerConfig() {
@@ -146,10 +168,6 @@ public class ProducerGroup {
     }
 
     public static void main(String[] args) {
-        // int a[] = {1, 2, 3};
-        // System.out.println(a.getClass().getName().toString());
-        System.out.println("args[0]");
-        System.out.println(args.length);
         String topics = args[0]; // List of topics to create seperated by Comma
         String[] topicList = topics.split(",");
         int noOfthreads = DEFAULT_NO_THREADS * topicList.length; // Number of Publishers

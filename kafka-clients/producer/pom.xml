@@ -34,7 +34,7 @@
     </repositories>
 
     <properties>
-        <java.version>1.7</java.version>
+        <java.version>1.8</java.version>
         <kafka.version>0.9.0.1-cp1</kafka.version>
         <kafka.scala.version>2.11</kafka.scala.version>
         <confluent.version>2.0.1</confluent.version>
@@ -49,12 +49,12 @@
             <version>0.10.0.0</version>
         </dependency>
 -->
-        <dependency>
+        <!-- <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
             <version>0.10.0.0</version>
-        </dependency>
-        <!-- <dependency>
+        </dependency> -->
+        <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
             <version>3.4.0</version>
@@ -63,9 +63,9 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.13</artifactId>
             <version>3.4.0</version>
-        </dependency> -->
+        </dependency>
 
-            <dependency>
+            <!-- <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka_2.11</artifactId>
       <version>0.10.0.0</version>
@@ -76,7 +76,7 @@
       <version>0.10.0.0</version>
       <classifier>test</classifier>
       <scope>test</scope>
-    </dependency>
+    </dependency> -->
         
         <!-- https://mvnrepository.com/artifact/com.101tec/zkclient -->
 	<dependency>
